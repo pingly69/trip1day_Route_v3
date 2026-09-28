@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <?!= include('Styles_Admin'); ?>
+  </head>
+  <body>
+    <!-- Login Guard Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="loginModalLabel"><i class="fas fa-lock"></i> เข้าสู่ระบบ Admin</h5>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="adminPasscode" class="form-label">รหัสผ่านแอดมิน</label>
+              <input type="password" class="form-control" id="adminPasscode" placeholder="กรอกรหัสผ่าน">
+            </div>
+            <button type="button" class="btn btn-primary w-100" id="btnLogin" onclick="app_login()">เข้าสู่ระบบ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="appContainer" style="display: none;">
+      <div class="d-flex" id="wrapper">
+        
+        <!-- Sidebar -->
+        <div class="bg-dark text-white" id="sidebar-wrapper">
+          <div class="sidebar-heading text-center py-4 fs-4 fw-bold border-bottom">
+            <i class="fas fa-route text-primary"></i> Trip1Day Admin
+          </div>
+          <div class="list-group list-group-flush my-3">
+            <a href="javascript:void(0)" onclick="router_nav('dashboard')" class="list-group-item list-group-item-action bg-transparent text-white fw-bold"><i class="fas fa-chart-line me-2"></i> Dashboard</a>
+            <a href="javascript:void(0)" onclick="router_nav('masterSite')" class="list-group-item list-group-item-action bg-transparent text-white fw-bold"><i class="fas fa-building me-2"></i> Master Site</a>
+            <a href="javascript:void(0)" onclick="router_nav('masterRoute')" class="list-group-item list-group-item-action bg-transparent text-white fw-bold"><i class="fas fa-map-marker-alt me-2"></i> Master Routes</a>
+            <a href="javascript:void(0)" onclick="router_nav('usersProfile')" class="list-group-item list-group-item-action bg-transparent text-white fw-bold"><i class="fas fa-users me-2"></i> Users Profile</a>
+            <a href="javascript:void(0)" onclick="app_logout()" class="list-group-item list-group-item-action bg-transparent text-danger fw-bold mt-5"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
+          </div>
+        </div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+          <nav class="navbar navbar-expand-lg navbar-light bg-transparent py-4 px-4">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-align-left text-primary fs-4 me-3" id="menu-toggle" style="cursor: pointer;"></i>
+              <h2 class="fs-2 m-0" id="pageTitle">Dashboard</h2>
+            </div>
+          </nav>
+
+          <div class="container-fluid px-4">
+            <!-- Pages -->
+            <div id="page_dashboard" class="page-section" style="display: none;">
+              <?!= include('View_Dashboard'); ?>
+            </div>
+            <div id="page_masterSite" class="page-section" style="display: none;">
+              <?!= include('View_MasterSite'); ?>
+            </div>
+            <div id="page_masterRoute" class="page-section" style="display: none;">
+              <?!= include('View_MasterRoute'); ?>
+            </div>
+            <div id="page_usersProfile" class="page-section" style="display: none;">
+              <?!= include('View_UsersProfile'); ?>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Script includes -->
+    <?!= include('Js_ApiClient'); ?>
+    <?!= include('Js_AdminMain'); ?>
+    <?!= include('Js_Dashboard'); ?>
+    <?!= include('Js_MasterSite'); ?>
+    <?!= include('Js_MasterRoute'); ?>
+    <?!= include('Js_UsersProfile'); ?>
+  </body>
+</html>

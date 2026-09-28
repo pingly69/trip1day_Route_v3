@@ -1,0 +1,30 @@
+{
+  "name": "trip1day-admin",
+  "version": "3.0.0",
+  "description": "Trip1Day Admin Web Application - Cloudflare Workers + D1",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "tsc --noEmit",
+    "deploy": "wrangler deploy",
+    "d1:local:init": "wrangler d1 execute IMG_DB --local --file=skills/d1_migration/full_migration.sql",
+    "d1:remote:init": "wrangler d1 execute IMG_DB --remote --file=skills/d1_migration/full_migration.sql -y"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "d1",
+    "typescript",
+    "trip1day"
+  ],
+  "author": "Full Stack Developer Team",
+  "license": "ISC",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260918.1",
+    "typescript": "^5.6.2",
+    "wrangler": "^4.135.0"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}

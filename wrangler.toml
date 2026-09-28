@@ -1,0 +1,16 @@
+name = "trip1day-admin"
+main = "src/index.ts"
+compatibility_date = "2024-09-19"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "IMG_DB"
+database_name = "IMG_DB"
+database_id = "4db03e65-cc9d-458e-81f7-b8119669dd17"
+
+[vars]
+TIMEZONE = "Asia/Bangkok"
+# admin_password: กำหนดผ่าน Cloudflare Dashboard (Variables and Secrets) หรือ wrangler secret
+
+[assets]
+directory = "./public"

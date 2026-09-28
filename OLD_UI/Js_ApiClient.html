@@ -1,0 +1,21 @@
+<script>
+const ApiClient = {
+  call: function(serverFuncName, payload) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject('การเชื่อมต่อกับเซิร์ฟเวอร์ใช้เวลานานเกินไป (Timeout)'), 30000);
+      
+      google.script.run
+        .withSuccessHandler(res => {
+          clearTimeout(timer);
+          if (res && res.status === 'success') resolve(res);
+          else reject(res ? res.message : 'Unknown server error');
+        })
+        .withFailureHandler(err => {
+          clearTimeout(timer);
+          reject(err ? err.message || err : 'Unknown server error');
+        })
+        [serverFuncName](payload);
+    });
+  }
+};
+</script>

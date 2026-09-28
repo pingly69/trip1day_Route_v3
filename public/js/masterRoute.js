@@ -1,0 +1,185 @@
+/**
+ * Master Route View Logic
+ */
+let modalRoute;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('modalMasterRoute');
+  if (el) modalRoute = new bootstrap.Modal(el);
+});
+
+async function route_loadData() {
+  showLoading();
+  try {
+    const [sites, routes] = await Promise.all([loadSitesIfNeeded(), loadRoutesIfNeeded()]);
+
+    // Populate Site filter dropdown
+    const filterSelect = document.getElementById('filterRouteSite');
+    filterSelect.innerHTML = '<option value="ALL">-- ดูทุก Site --</option>';
+    sites.forEach(s => {
+      filterSelect.innerHTML += `<option value="${s.Site_ID}">${s.Site_Name}</option>`;
+    });
+
+    // Populate Modal Dropdown (Only Active Sites)
+    const modalSelect = document.getElementById('route_site_id');
+    modalSelect.innerHTML = '<option value="">-- เลือก Site --</option>';
+    sites
+      .filter(s => s.Active)
+      .forEach(s => {
+        modalSelect.innerHTML += `<option value="${s.Site_ID}">${s.Site_Name}</option>`;
+      });
+
+    route_applyFilter();
+  } catch (err) {
+    Swal.fire('Error', String(err.message || err), 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function route_applyFilter() {
+  const selectedSite = document.getElementById('filterRouteSite').value;
+  let data = AdminState.routes;
+
+  if (selectedSite !== 'ALL') {
+    data = data.filter(r => r.Site_ID === selectedSite);
+  }
+  route_renderTable(data);
+}
+
+function route_renderTable(routes) {
+  const tbody = document.querySelector('#tbMasterRoute tbody');
+  tbody.innerHTML = '';
+  if (routes.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">ไม่พบข้อมูลเส้นทาง</td></tr>';
+    return;
+  }
+
+  routes.forEach(r => {
+    const badge = r.Active
+      ? '<span class="badge bg-success">Active</span>'
+      : '<span class="badge bg-secondary">Inactive</span>';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.Site_Name}</td>
+      <td class="fw-bold">${r.Route_Name}</td>
+      <td>${r.Origin}</td>
+      <td>${r.Destination}</td>
+      <td class="text-end">${r.Distance_KM}</td>
+      <td>${badge}</td>
+      <td class="text-end">
+        <button class="btn btn-sm btn-outline-primary me-1" onclick='route_openModal(${JSON.stringify(r)})' title="แก้ไข"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-outline-danger" onclick="route_deleteData('${r.Route_ID}')" title="ลบ"><i class="fas fa-trash"></i></button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function route_openModal(routeObj = null) {
+  document.getElementById('formMasterRoute').reset();
+  document.getElementById('route_id').value = '';
+  document.getElementById('route_active').checked = true;
+
+  if (routeObj) {
+    document.getElementById('modalMasterRouteLabel').innerText = 'แก้ไขเส้นทาง';
+    document.getElementById('route_id').value = routeObj.Route_ID;
+
+    // If updating, temporarily add the inactive site to dropdown if it's selected
+    const select = document.getElementById('route_site_id');
+    let optionExists = false;
+    for (let i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === routeObj.Site_ID) optionExists = true;
+    }
+    if (!optionExists) {
+      select.innerHTML += `<option value="${routeObj.Site_ID}">${routeObj.Site_Name} (Inactive)</option>`;
+    }
+
+    document.getElementById('route_site_id').value = routeObj.Site_ID;
+    document.getElementById('route_name').value = routeObj.Route_Name;
+    document.getElementById('route_origin').value = routeObj.Origin;
+    document.getElementById('route_destination').value = routeObj.Destination;
+    document.getElementById('route_distance').value = routeObj.Distance_KM;
+    document.getElementById('route_active').checked = routeObj.Active;
+  } else {
+    document.getElementById('modalMasterRouteLabel').innerText = 'เพิ่มเส้นทางใหม่';
+  }
+
+  modalRoute.show();
+}
+
+async function route_saveData() {
+  const payload = {
+    Route_ID: document.getElementById('route_id').value,
+    Site_ID: document.getElementById('route_site_id').value,
+    Route_Name: document.getElementById('route_name').value.trim(),
+    Origin: document.getElementById('route_origin').value.trim(),
+    Destination: document.getElementById('route_destination').value.trim(),
+    Distance_KM: document.getElementById('route_distance').value,
+    Active: document.getElementById('route_active').checked,
+  };
+
+  // Validation
+  if (!payload.Site_ID) {
+    Swal.fire('แจ้งเตือน', 'กรุณาเลือก Site', 'warning');
+    return;
+  }
+  if (!payload.Route_Name) {
+    Swal.fire('แจ้งเตือน', 'กรุณาระบุชื่อเส้นทาง', 'warning');
+    return;
+  }
+  if (!payload.Origin || !payload.Destination) {
+    Swal.fire('แจ้งเตือน', 'กรุณาระบุต้นทางและปลายทาง', 'warning');
+    return;
+  }
+  if (parseFloat(payload.Distance_KM) <= 0 || isNaN(parseFloat(payload.Distance_KM))) {
+    Swal.fire('แจ้งเตือน', 'ระยะทางต้องมากกว่า 0', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btnSaveRoute');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึก...';
+
+  try {
+    await ApiClient.call('api_saveMasterRoute', payload);
+    modalRoute.hide();
+    Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: false });
+
+    invalidateRoutes();
+    await route_loadData();
+  } catch (err) {
+    Swal.fire('เกิดข้อผิดพลาด', String(err.message || err), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerText = 'บันทึกข้อมูล';
+  }
+}
+
+function route_deleteData(routeId) {
+  Swal.fire({
+    title: 'ยืนยันการลบ?',
+    text: 'ลบเส้นทางนี้ใช่หรือไม่?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'ใช่, ลบเลย!',
+    cancelButtonText: 'ยกเลิก',
+  }).then(async result => {
+    if (result.isConfirmed) {
+      showLoading();
+      try {
+        await ApiClient.call('api_deleteMasterRoute', routeId);
+        Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', timer: 1500, showConfirmButton: false });
+        invalidateRoutes();
+        await route_loadData();
+      } catch (err) {
+        Swal.fire('Error', String(err.message || err), 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+  });
+}

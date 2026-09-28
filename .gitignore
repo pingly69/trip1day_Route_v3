@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Cloudflare & Wrangler
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+
+# Build & Temporary files
+dist/
+build/
+.cache/
+scratch/
+*.log
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+test_output.xlsx
+

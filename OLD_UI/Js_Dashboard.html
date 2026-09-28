@@ -1,0 +1,223 @@
+<script>
+let currentDashboardData = [];
+
+async function dash_init() {
+  showLoading();
+  try {
+    // Set Default Filter Values
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const pad = (n) => n.toString().padStart(2, '0');
+    const yestDateStr = `${yesterday.getFullYear()}-${pad(yesterday.getMonth()+1)}-${pad(yesterday.getDate())}`;
+    const todayDateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    
+    // Created_At (datetime-local format: YYYY-MM-DDTHH:mm:ss)
+    document.getElementById('f_startDate_CreatedAt').value = `${yestDateStr}T09:00`;
+    document.getElementById('f_endDate_CreatedAt').value = `${todayDateStr}T09:00`;
+    
+    // Approve_Datetime (datetime-local format: YYYY-MM-DDTHH:mm:ss)
+    document.getElementById('f_startDate_Approve').value = `${yestDateStr}T09:00`;
+    document.getElementById('f_endDate_Approve').value = `${todayDateStr}T09:00`;
+    
+    // Req_Date (date format: YYYY-MM-DD)
+    document.getElementById('f_startDate_ReqDate').value = yestDateStr;
+    document.getElementById('f_endDate_ReqDate').value = yestDateStr;
+
+    const sites = await loadSitesIfNeeded();
+    const sel = document.getElementById('f_siteId');
+    sel.innerHTML = '<option value="">-- ทั้งหมด --</option>';
+    sites.forEach(s => {
+      sel.innerHTML += `<option value="${s.Site_ID}">${s.Site_Name}</option>`;
+    });
+    
+    // Auto search initially with no filters (or you could leave it empty until search is clicked)
+    await dash_search();
+  } catch (err) {
+    Swal.fire('Error', String(err), 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function dash_search() {
+  const filters = {
+    startDate_CreatedAt: document.getElementById('f_startDate_CreatedAt').value,
+    endDate_CreatedAt: document.getElementById('f_endDate_CreatedAt').value,
+    startDate_ReqDate: document.getElementById('f_startDate_ReqDate').value,
+    endDate_ReqDate: document.getElementById('f_endDate_ReqDate').value,
+    reqName: document.getElementById('f_reqName').value.trim(),
+    plateNo: document.getElementById('f_plateNo').value.trim(),
+    siteId: document.getElementById('f_siteId').value,
+    status: document.getElementById('f_status').value,
+    startDate_Approve: document.getElementById('f_startDate_Approve').value,
+    endDate_Approve: document.getElementById('f_endDate_Approve').value
+  };
+  
+  showLoading();
+  try {
+    const res = await ApiClient.call('api_getDashboardTransactions', filters);
+    currentDashboardData = res.data;
+    dash_renderTable(currentDashboardData);
+  } catch (err) {
+    Swal.fire('Error', String(err), 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function dash_clearFilter() {
+  document.getElementById('f_startDate_CreatedAt').value = '';
+  document.getElementById('f_endDate_CreatedAt').value = '';
+  document.getElementById('f_startDate_ReqDate').value = '';
+  document.getElementById('f_endDate_ReqDate').value = '';
+  document.getElementById('f_startDate_Approve').value = '';
+  document.getElementById('f_endDate_Approve').value = '';
+  document.getElementById('f_reqName').value = '';
+  document.getElementById('f_plateNo').value = '';
+  document.getElementById('f_siteId').value = '';
+  document.getElementById('f_status').value = 'ALL';
+  dash_search();
+}
+
+function dash_renderTable(data) {
+  document.getElementById('dashCount').innerText = data.length;
+  const tbody = document.querySelector('#tbDashboard tbody');
+  tbody.innerHTML = '';
+  
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4">ไม่พบข้อมูลตามเงื่อนไขที่ระบุ</td></tr>';
+    return;
+  }
+  
+  data.forEach(t => {
+    // Format dates to locale string if needed, or just display raw
+    const formatDt = (dtStr) => {
+      if(!dtStr) return '-';
+      const d = new Date(dtStr);
+      if (isNaN(d.getTime())) return dtStr;
+      const pad = (n) => n.toString().padStart(2, '0');
+      const dd = pad(d.getDate());
+      const mm = pad(d.getMonth() + 1);
+      const yyyy = d.getFullYear(); // A.D. (Christian Era)
+      const HH = pad(d.getHours());
+      const ii = pad(d.getMinutes());
+      const ss = pad(d.getSeconds());
+      
+      // If time is 00:00:00 (for date-only fields), we can still show it or format accordingly
+      return `${dd}/${mm}/${yyyy} ${HH}:${ii}:${ss}`;
+    };
+    
+    // Status Badge
+    let badgeClass = 'bg-secondary';
+    if(t.Status === 'APPROVED') badgeClass = 'bg-success';
+    else if(t.Status === 'REJECTED') badgeClass = 'bg-danger';
+    else if(t.Status === 'PENDING') badgeClass = 'bg-warning text-dark';
+    else if(t.Status === 'DRAFT') badgeClass = 'bg-light text-dark border';
+    
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${t.Transaction_ID || '-'}</td>
+      <td>${formatDt(t.Created_At)}</td>
+      <td>${formatDt(t.Req_Date)}</td>
+      <td>${t.Emp_No ? `<span class="badge bg-light text-dark font-monospace border">${t.Emp_No}</span>` : '-'}</td>
+      <td>${t.Req_Name || '-'}</td>
+      <td>${t.Plate_No || '-'}</td>
+      <td>${t.Site_Name || '-'}</td>
+      <td>${t.Total_KM || 0}</td>
+      <td class="text-end fw-bold text-success">${parseFloat(t.Net_Total || 0).toLocaleString()}</td>
+      <td><span class="badge ${badgeClass}">${t.Status || '-'}</span></td>
+      <td>${t.Approver || '-'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+const HEADER_MAP = {
+  Transaction_ID: 'รหัสรายการ', 
+  Req_Date: 'วันที่เดินทาง', 
+  Emp_No: 'รหัสพนักงาน',
+  Req_LINE_UserId: 'LINE User ID',
+  Req_Name: 'ชื่อผู้เบิก',
+  Plate_No: 'ทะเบียนรถ', 
+  Site_ID: 'รหัสสถานที่ (Site ID)',
+  Site_Name: 'สถานที่', 
+  Travel_Purpose: 'วัตถุประสงค์',
+  Trip_Details: 'รายละเอียดเส้นทาง',
+  Total_KM: 'ระยะทาง (กม.)',
+  Toll_Fee: 'ค่าทางด่วน', 
+  Park_Fee: 'ค่าจอดรถ', 
+  Flat_Rate_Fee: 'ค่าเหมาจ่าย',
+  Net_Total: 'ยอดสุทธิ', 
+  Approver: 'ผู้อนุมัติ', 
+  Status: 'สถานะ',
+  Approve_Datetime: 'วันเวลาที่อนุมัติ', 
+  Created_At: 'วันเวลาที่บันทึก'
+};
+
+function mapForExport(dataArray) {
+  const tripTypeLabel = (tripType) => {
+    switch (String(tripType || '').toUpperCase()) {
+      case 'ROUND_TRIP': return 'ไปกลับ';
+      case 'SINGLE': return 'เที่ยวเดียว';
+      default: return tripType ? String(tripType) : '';
+    }
+  };
+
+  return dataArray.map(row => {
+    const mapped = {};
+    Object.keys(HEADER_MAP).forEach(key => { 
+      let val = row[key] !== undefined && row[key] !== null ? row[key] : ''; 
+      
+      // Format Dates
+      if ((key === 'Req_Date' || key === 'Created_At' || key === 'Approve_Datetime') && val !== '') {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) {
+          const pad = (n) => n.toString().padStart(2, '0');
+          val = `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+      }
+      
+      // Parse Trip_Details JSON
+      if (key === 'Trip_Details' && val !== '') {
+        try {
+          const trips = typeof val === 'string' ? JSON.parse(val) : val;
+          if (Array.isArray(trips)) {
+            val = trips.map(t => {
+              let name = t.route_name;
+              if (t.origin && t.dest && (!name || name === 'ระบุเอง')) {
+                name = `${t.origin} - ${t.dest}`;
+              }
+              const dist = t.km || 0;
+              const type = tripTypeLabel(t.trip_type);
+              return `${name || '-'} (${dist} กม.)${type ? ` - ${type}` : ''}`;
+            }).join(' / ');
+          }
+        } catch (e) {
+          // Keep original value if it's not a valid JSON
+        }
+      }
+      
+      mapped[HEADER_MAP[key]] = val; 
+    });
+    return mapped;
+  });
+}
+
+function dash_exportExcel() {
+  if (currentDashboardData.length === 0) {
+    Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับ Export', 'warning');
+    return;
+  }
+  
+  const mappedData = mapForExport(currentDashboardData);
+  const worksheet = XLSX.utils.json_to_sheet(mappedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+  
+  // Name file with current timestamp
+  const dateStr = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+  XLSX.writeFile(workbook, `Trip1Day_Report_${dateStr}.xlsx`);
+}
+</script>

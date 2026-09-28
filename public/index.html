@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trip1Day - ระบบบริหารจัดการแอดมิน (Admin Web App)</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <!-- Login Guard Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="loginModalLabel"><i class="fas fa-lock me-2"></i> เข้าสู่ระบบ Admin</h5>
+          </div>
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label for="adminPasscode" class="form-label fw-bold">รหัสผ่านแอดมิน</label>
+              <input type="password" class="form-control form-control-lg" id="adminPasscode" placeholder="กรอกรหัสผ่าน" onkeyup="if(event.key === 'Enter') app_login()" />
+            </div>
+            <button type="button" class="btn btn-primary btn-lg w-100 mt-2" id="btnLogin" onclick="app_login()">
+              <i class="fas fa-sign-in-alt me-2"></i>เข้าสู่ระบบ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="display: none;">
+      <div class="spinner-border text-primary" role="status" style="width: 3.5rem; height: 3.5rem;">
+        <span class="visually-hidden">กำลังโหลด...</span>
+      </div>
+      <div class="mt-3 fw-bold text-dark">กำลังประมวลผลข้อมูล...</div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="appContainer" style="display: none;">
+      <div class="d-flex" id="wrapper">
+        
+        <!-- Sidebar -->
+        <div class="bg-dark text-white" id="sidebar-wrapper">
+          <div class="sidebar-heading text-center py-4 fs-4 fw-bold border-bottom">
+            <i class="fas fa-route text-primary me-2"></i>Trip1Day Admin
+          </div>
+          <div class="list-group list-group-flush my-3">
+            <a href="javascript:void(0)" id="nav_dashboard" onclick="router_nav('dashboard')" class="list-group-item list-group-item-action bg-transparent text-white fw-bold">
+              <i class="fas fa-chart-line me-2"></i> Dashboard
+            </a>
+            <a href="javascript:void(0)" id="nav_masterSite" onclick="router_nav('masterSite')" class="list-group-item list-group-item-action bg-transparent text-white fw-bold">
+              <i class="fas fa-building me-2"></i> Master Site
+            </a>
+            <a href="javascript:void(0)" id="nav_masterRoute" onclick="router_nav('masterRoute')" class="list-group-item list-group-item-action bg-transparent text-white fw-bold">
+              <i class="fas fa-map-marker-alt me-2"></i> Master Routes
+            </a>
+            <a href="javascript:void(0)" id="nav_usersProfile" onclick="router_nav('usersProfile')" class="list-group-item list-group-item-action bg-transparent text-white fw-bold">
+              <i class="fas fa-users me-2"></i> Users Profile
+            </a>
+            <a href="javascript:void(0)" onclick="app_logout()" class="list-group-item list-group-item-action bg-transparent text-danger fw-bold mt-5">
+              <i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ
+            </a>
+          </div>
+        </div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+          <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom py-3 px-4 shadow-sm">
+            <div class="d-flex align-items-center w-100 justify-content-between">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-bars text-primary fs-4 me-3" id="menu-toggle" style="cursor: pointer;" title="ย่อ/ขยายเมนู"></i>
+                <h4 class="fs-4 m-0 fw-bold" id="pageTitle">Dashboard</h4>
+              </div>
+              <div>
+                <span class="badge bg-light text-secondary border px-3 py-2">
+                  <i class="fas fa-database me-1 text-success"></i> D1: <strong>IMG_DB</strong>
+                </span>
+              </div>
+            </div>
+          </nav>
+
+          <div class="container-fluid py-4 px-4">
+            
+            <!-- Page: Dashboard -->
+            <div id="page_dashboard" class="page-section" style="display: none;">
+              <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                  <h5 class="m-0 fw-bold"><i class="fas fa-filter text-primary me-2"></i> ค้นหารายการ (Transactions)</h5>
+                </div>
+                <div class="card-body bg-light">
+                  <div class="row g-3">
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">วันที่บันทึก (Created At) ตั้งแต่</label>
+                      <input type="datetime-local" class="form-control" id="f_startDate_CreatedAt" step="1" />
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">ถึงวันที่</label>
+                      <input type="datetime-local" class="form-control" id="f_endDate_CreatedAt" step="1" />
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">วันที่เดินทาง (Req Date) ตั้งแต่</label>
+                      <input type="date" class="form-control" id="f_startDate_ReqDate" />
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">ถึงวันที่</label>
+                      <input type="date" class="form-control" id="f_endDate_ReqDate" />
+                    </div>
+                    
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">ชื่อผู้เบิก / รหัสพนักงาน</label>
+                      <input type="text" class="form-control" id="f_reqName" placeholder="ระบุชื่อ หรือรหัสพนักงาน" onkeyup="if(event.key === 'Enter') dash_search()" />
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">ทะเบียนรถ</label>
+                      <input type="text" class="form-control" id="f_plateNo" placeholder="ระบุทะเบียนรถ" onkeyup="if(event.key === 'Enter') dash_search()" />
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">Site</label>
+                      <select class="form-select" id="f_siteId">
+                        <option value="">-- ทั้งหมด --</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">สถานะ</label>
+                      <select class="form-select" id="f_status">
+                        <option value="ALL">-- ทั้งหมด --</option>
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="APPROVED">APPROVED</option>
+                        <option value="REJECTED">REJECTED</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">วันที่อนุมัติ (Approve Date) ตั้งแต่</label>
+                      <input type="datetime-local" class="form-control" id="f_startDate_Approve" step="1" />
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small text-muted mb-1">ถึงวันที่</label>
+                      <input type="datetime-local" class="form-control" id="f_endDate_Approve" step="1" />
+                    </div>
+                  </div>
+                  
+                  <div class="mt-4 text-center">
+                    <button class="btn btn-primary px-4" onclick="dash_search()"><i class="fas fa-search me-1"></i> ค้นหา</button>
+                    <button class="btn btn-outline-secondary px-4 ms-2" onclick="dash_clearFilter()"><i class="fas fa-undo me-1"></i> ล้างค่า</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                  <h5 class="m-0 fw-bold"><i class="fas fa-list text-primary me-2"></i> ผลการค้นหา <span id="dashCount" class="badge bg-secondary ms-2">0</span></h5>
+                  <div>
+                    <button class="btn btn-success btn-sm px-3 me-2" onclick="dash_exportExcel()"><i class="fas fa-file-excel me-1"></i> Export Excel (.xlsx)</button>
+                    <button class="btn btn-outline-success btn-sm px-3" onclick="dash_exportCSV()"><i class="fas fa-file-csv me-1"></i> Export CSV (.csv)</button>
+                  </div>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive" style="max-height: 600px;">
+                    <table class="table table-hover table-striped align-middle m-0" id="tbDashboard" style="white-space: nowrap;">
+                      <thead class="table-light sticky-top">
+                        <tr>
+                          <th>รหัสรายการ</th>
+                          <th>วันที่บันทึก</th>
+                          <th>วันที่เดินทาง</th>
+                          <th>รหัสพนักงาน</th>
+                          <th>ชื่อผู้เบิก</th>
+                          <th>ทะเบียนรถ</th>
+                          <th>สถานที่ (Site)</th>
+                          <th class="text-end">ระยะทาง (กม.)</th>
+                          <th class="text-end">ยอดสุทธิ (บาท)</th>
+                          <th class="text-center">สถานะ</th>
+                          <th>ผู้อนุมัติ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- Rows render here -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Page: Master Site -->
+            <div id="page_masterSite" class="page-section" style="display: none;">
+              <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                  <h5 class="m-0 fw-bold"><i class="fas fa-building text-primary me-2"></i> จัดการ Master Site</h5>
+                  <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="site_openModal()"><i class="fas fa-plus me-1"></i> เพิ่ม Site ใหม่</button>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="tbMasterSite">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width: 60px;">#</th>
+                          <th>รหัส Site (Site ID)</th>
+                          <th>ชื่อ Site (Site Name)</th>
+                          <th>สถานะ</th>
+                          <th class="text-end">จัดการ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- Rows render here -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Page: Master Route -->
+            <div id="page_masterRoute" class="page-section" style="display: none;">
+              <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                  <h5 class="m-0 fw-bold"><i class="fas fa-map-marker-alt text-primary me-2"></i> จัดการ Master Routes</h5>
+                  <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="route_openModal()"><i class="fas fa-plus me-1"></i> เพิ่มเส้นทางใหม่</button>
+                </div>
+                <div class="card-body">
+                  <div class="row mb-3">
+                    <div class="col-md-4">
+                      <label class="form-label text-muted small mb-1">กรองตาม Site</label>
+                      <select class="form-select" id="filterRouteSite" onchange="route_applyFilter()">
+                        <option value="ALL">-- ดูทุก Site --</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="tbMasterRoute">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Site</th>
+                          <th>ชื่อเส้นทาง (Route Name)</th>
+                          <th>ต้นทาง</th>
+                          <th>ปลายทาง</th>
+                          <th class="text-end">ระยะทาง (กม.)</th>
+                          <th>สถานะ</th>
+                          <th class="text-end">จัดการ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- Rows render here -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Page: Users Profile -->
+            <div id="page_usersProfile" class="page-section" style="display: none;">
+              <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                  <h5 class="m-0 fw-bold"><i class="fas fa-users text-primary me-2"></i> จัดการผู้ใช้งาน (Users Profile)</h5>
+                  <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="users_openModal()">
+                    <i class="fas fa-plus me-1"></i> เพิ่มผู้ใช้
+                  </button>
+                </div>
+                <div class="card-body bg-light">
+                  <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                      <input type="text" class="form-control" id="f_userSearch" placeholder="ค้นหาจาก ชื่อ, รหัสพนักงาน, ทะเบียนรถ, หรือ Line UID..." onkeyup="if(event.key === 'Enter') users_search()" />
+                    </div>
+                    <div class="col-md-2">
+                      <button class="btn btn-secondary w-100" onclick="users_search()"><i class="fas fa-search me-1"></i> ค้นหา</button>
+                    </div>
+                  </div>
+                  
+                  <div class="table-responsive bg-white rounded shadow-sm border">
+                    <table class="table table-hover table-striped mb-0 align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Line UID</th>
+                          <th>รหัสพนักงาน (Emp No.)</th>
+                          <th>ชื่อผู้ขอเบิก</th>
+                          <th>ทะเบียนรถ</th>
+                          <th>กลุ่มอัตรา (Group Car)</th>
+                          <th class="text-end">จัดการ</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tb_users">
+                        <!-- Rows render here -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Modal: Master Site -->
+    <div class="modal fade" id="modalMasterSite" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalMasterSiteLabel">ฟอร์ม Master Site</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formMasterSite">
+              <input type="hidden" id="site_is_edit" value="false" />
+              <div class="mb-3">
+                <label for="site_id" class="form-label">รหัส Site (Site ID / ERP Code) <span class="text-danger">*</span></label>
+                <input type="text" class="form-control font-monospace" id="site_id" placeholder="เช่น A07902026, Sale, HO" required />
+                <div class="form-text text-muted small" id="site_id_help">
+                  <i class="fas fa-info-circle me-1"></i>ระบุรหัสจากระบบ ERP (ห้ามซ้ำ) ไม่สามารถแก้ไขได้หลังสร้างแล้ว
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="site_name" class="form-label">ชื่อ Site <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="site_name" placeholder="เช่น คลังสินค้าบางนา" required />
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="site_active" checked />
+                <label class="form-check-label" for="site_active">เปิดใช้งาน (Active)</label>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="site_saveData()" id="btnSaveSite">บันทึกข้อมูล</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Master Route -->
+    <div class="modal fade" id="modalMasterRoute" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalMasterRouteLabel">ฟอร์ม Master Route</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formMasterRoute">
+              <input type="hidden" id="route_id" />
+              
+              <div class="mb-3">
+                <label for="route_site_id" class="form-label">เลือก Site <span class="text-danger">*</span></label>
+                <select class="form-select" id="route_site_id" required>
+                  <!-- Options populated by JS -->
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="route_name" class="form-label">ชื่อเส้นทาง <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="route_name" required />
+              </div>
+              <div class="row mb-3">
+                <div class="col-6">
+                  <label for="route_origin" class="form-label">ต้นทาง <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="route_origin" required />
+                </div>
+                <div class="col-6">
+                  <label for="route_destination" class="form-label">ปลายทาง <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="route_destination" required />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="route_distance" class="form-label">ระยะทาง (กม.) <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="route_distance" step="0.1" min="0.1" required />
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="route_active" checked />
+                <label class="form-check-label" for="route_active">เปิดใช้งาน (Active)</label>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="route_saveData()" id="btnSaveRoute">บันทึกข้อมูล</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Users Profile -->
+    <div class="modal fade" id="modalUser" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalUserTitle">เพิ่มผู้ใช้</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="u_isEdit" value="0" />
+            
+            <div class="mb-3">
+              <label class="form-label">Line UID <span class="text-danger">*</span></label>
+              <input type="text" class="form-control font-monospace" id="u_lineUid" placeholder="ระบุ Line UID" />
+              <small class="text-muted">ใช้ผูกกับ LINE userId</small>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">รหัสพนักงาน (Emp No.)</label>
+              <input type="text" class="form-control font-monospace" id="u_empNo" placeholder="ระบุรหัสพนักงาน (ถ้ามี)" />
+              <small class="text-muted">สำหรับออกรายงาน GL / Excel</small>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">ชื่อผู้ขอเบิก (Requester Name) <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="u_reqName" placeholder="ระบุชื่อพนักงาน" />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">ทะเบียนรถ (Car No.) <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="u_carNo" placeholder="ระบุทะเบียนรถ" />
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">กลุ่มอัตรา (Group Car) <span class="text-danger">*</span></label>
+              <select class="form-select" id="u_groupCar">
+                <option value="1">กลุ่ม 1 (ใช้อัตรา group_car1)</option>
+                <option value="2">กลุ่ม 2 (ใช้อัตรา group_car2)</option>
+                <option value="3">กลุ่ม 3 (เตรียมไว้สำหรับอนาคต)</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="users_save()"><i class="fas fa-save me-1"></i> บันทึก</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="js/apiClient.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/masterSite.js"></script>
+    <script src="js/masterRoute.js"></script>
+    <script src="js/usersProfile.js"></script>
+  </body>
+</html>
