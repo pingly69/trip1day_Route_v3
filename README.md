@@ -76,7 +76,6 @@ trip1day_Route_v3/
 │   ├── config.ts                     # Runtime Environment Configuration
 │   ├── db.ts                         # Cloudflare D1 Helper & Wrapper
 │   └── index.ts                      # Cloudflare Workers Router & Endpoints
-├── OLD_UI/                           # Legacy UI Reference Files
 ├── D1_DATABASE_INTEGRATION_SPEC.md   # D1 Central Integration Specification
 ├── wrangler.toml                     # Cloudflare Workers & D1 Configuration
 ├── tsconfig.json                     # TypeScript Configuration
