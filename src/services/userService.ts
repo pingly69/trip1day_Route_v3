@@ -6,11 +6,13 @@ export async function getAllUsers(db: D1Database) {
     .all<UserRow>();
 
   return results.map(row => ({
-    Line_uid: row.line_uid,
+    line_uid: row.line_uid,
     emp_no: row.emp_no || '',
     requester_name: row.requester_name,
     car_no: row.car_no,
     group_car: row.group_car,
+    // Backward compatibility aliases
+    Line_uid: row.line_uid,
   }));
 }
 
@@ -18,14 +20,15 @@ export async function saveUser(
   db: D1Database,
   payload: {
     isEdit?: boolean;
-    Line_uid: string;
+    line_uid?: string;
+    Line_uid?: string;
     emp_no?: string;
     requester_name: string;
     car_no: string;
     group_car: number | string;
   }
 ) {
-  const lineUid = payload.Line_uid?.trim() ?? '';
+  const lineUid = (payload.line_uid || payload.Line_uid)?.trim() ?? '';
   const empNo = payload.emp_no?.trim() ?? '';
   const reqName = payload.requester_name?.trim() ?? '';
   const carNo = payload.car_no?.trim() ?? '';
@@ -49,7 +52,7 @@ export async function saveUser(
     await db
       .prepare(
         `INSERT INTO users_profile (line_uid, requester_name, car_no, group_car, emp_no, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
+         VALUES (?, ?, ?, ?, ?, datetime('now', '+7 hours'), datetime('now', '+7 hours'))`
       )
       .bind(lineUid, reqName, carNo, groupCar, empNo)
       .run();
@@ -59,7 +62,7 @@ export async function saveUser(
     const result = await db
       .prepare(
         `UPDATE users_profile
-         SET requester_name = ?, car_no = ?, group_car = ?, emp_no = ?, updated_at = datetime('now')
+         SET requester_name = ?, car_no = ?, group_car = ?, emp_no = ?, updated_at = datetime('now', '+7 hours')
          WHERE line_uid = ?`
       )
       .bind(reqName, carNo, groupCar, empNo, lineUid)

@@ -30,18 +30,19 @@ function users_renderTable(data) {
   }
 
   data.forEach(u => {
+    const lineUid = u.line_uid || u.Line_uid || '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="fw-bold text-primary font-monospace">${u.Line_uid || ''}</td>
+      <td class="fw-bold text-primary font-monospace">${lineUid}</td>
       <td>${u.emp_no ? `<span class="badge bg-light text-dark font-monospace border">${u.emp_no}</span>` : '<span class="text-muted">-</span>'}</td>
       <td class="fw-bold">${u.requester_name || ''}</td>
       <td>${u.car_no || ''}</td>
       <td><span class="badge bg-info text-dark">กลุ่ม ${u.group_car || 1}</span></td>
       <td class="text-end">
-        <button class="btn btn-sm btn-outline-primary me-1" onclick="users_edit('${u.Line_uid}')" title="แก้ไข">
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="users_edit('${lineUid}')" title="แก้ไข">
           <i class="fas fa-edit"></i>
         </button>
-        <button class="btn btn-sm btn-outline-danger" onclick="users_delete('${u.Line_uid}')" title="ลบ">
+        <button class="btn btn-sm btn-outline-danger" onclick="users_delete('${lineUid}')" title="ลบ">
           <i class="fas fa-trash"></i>
         </button>
       </td>
@@ -58,11 +59,15 @@ function users_search() {
   }
 
   const filtered = AdminState.users.filter(
-    u =>
-      (u.Line_uid && u.Line_uid.toLowerCase().includes(keyword)) ||
-      (u.emp_no && u.emp_no.toLowerCase().includes(keyword)) ||
-      (u.requester_name && u.requester_name.toLowerCase().includes(keyword)) ||
-      (u.car_no && u.car_no.toLowerCase().includes(keyword))
+    u => {
+      const uid = (u.line_uid || u.Line_uid || '').toLowerCase();
+      return (
+        uid.includes(keyword) ||
+        (u.emp_no && u.emp_no.toLowerCase().includes(keyword)) ||
+        (u.requester_name && u.requester_name.toLowerCase().includes(keyword)) ||
+        (u.car_no && u.car_no.toLowerCase().includes(keyword))
+      );
+    }
   );
 
   users_renderTable(filtered);
@@ -86,11 +91,11 @@ function users_openModal() {
 }
 
 function users_edit(lineUid) {
-  const user = AdminState.users.find(u => u.Line_uid === lineUid);
+  const user = AdminState.users.find(u => (u.line_uid || u.Line_uid) === lineUid);
   if (!user) return;
 
   document.getElementById('u_isEdit').value = '1';
-  document.getElementById('u_lineUid').value = user.Line_uid || '';
+  document.getElementById('u_lineUid').value = user.line_uid || user.Line_uid || '';
   document.getElementById('u_lineUid').readOnly = true; // Primary Key
   document.getElementById('u_empNo').value = user.emp_no || '';
   document.getElementById('u_reqName').value = user.requester_name || '';
@@ -120,11 +125,13 @@ async function users_save() {
 
   const payload = {
     isEdit: isEdit,
-    Line_uid: lineUid,
+    line_uid: lineUid,
     emp_no: empNo,
     requester_name: reqName,
     car_no: carNo,
     group_car: Number(groupCar),
+    // Backward compatibility
+    Line_uid: lineUid,
   };
 
   showLoading();

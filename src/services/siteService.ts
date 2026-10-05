@@ -6,6 +6,10 @@ export async function getAllSites(db: D1Database) {
     .all<SiteRow>();
 
   return results.map(row => ({
+    site_id: row.site_id,
+    site_name: row.site_name,
+    active: row.active === 1,
+    // Backward compatibility aliases
     Site_ID: row.site_id,
     Site_Name: row.site_name,
     Active: row.active === 1,
@@ -16,14 +20,17 @@ export async function saveSite(
   db: D1Database,
   payload: {
     isEdit?: boolean;
-    Site_ID: string;
-    Site_Name: string;
-    Active: boolean;
+    site_id?: string;
+    site_name?: string;
+    active?: boolean;
+    Site_ID?: string;
+    Site_Name?: string;
+    Active?: boolean;
   }
 ) {
-  const siteId = payload.Site_ID?.trim() ?? '';
-  const name = payload.Site_Name?.trim() ?? '';
-  const active = payload.Active ? 1 : 0;
+  const siteId = (payload.site_id || payload.Site_ID)?.trim() ?? '';
+  const name = (payload.site_name || payload.Site_Name)?.trim() ?? '';
+  const active = (payload.active !== undefined ? payload.active : payload.Active) ? 1 : 0;
   const isEdit = !!payload.isEdit;
 
   if (!siteId) {

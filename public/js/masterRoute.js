@@ -42,7 +42,7 @@ function route_applyFilter() {
   let data = AdminState.routes;
 
   if (selectedSite !== 'ALL') {
-    data = data.filter(r => r.Site_ID === selectedSite);
+    data = data.filter(r => (r.site_id || r.Site_ID) === selectedSite);
   }
   route_renderTable(data);
 }
@@ -56,21 +56,29 @@ function route_renderTable(routes) {
   }
 
   routes.forEach(r => {
-    const badge = r.Active
+    const routeId = r.route_id || r.Route_ID;
+    const siteName = r.site_name || r.Site_Name;
+    const routeName = r.route_name || r.Route_Name;
+    const origin = r.origin || r.Origin;
+    const destination = r.destination || r.Destination;
+    const distanceKm = r.distance_km !== undefined ? r.distance_km : r.Distance_KM;
+    const isActive = r.active !== undefined ? r.active : r.Active;
+
+    const badge = isActive
       ? '<span class="badge bg-success">Active</span>'
       : '<span class="badge bg-secondary">Inactive</span>';
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${r.Site_Name}</td>
-      <td class="fw-bold">${r.Route_Name}</td>
-      <td>${r.Origin}</td>
-      <td>${r.Destination}</td>
-      <td class="text-end">${r.Distance_KM}</td>
+      <td>${siteName}</td>
+      <td class="fw-bold">${routeName}</td>
+      <td>${origin}</td>
+      <td>${destination}</td>
+      <td class="text-end">${distanceKm}</td>
       <td>${badge}</td>
       <td class="text-end">
         <button class="btn btn-sm btn-outline-primary me-1" onclick='route_openModal(${JSON.stringify(r)})' title="แก้ไข"><i class="fas fa-edit"></i></button>
-        <button class="btn btn-sm btn-outline-danger" onclick="route_deleteData('${r.Route_ID}')" title="ลบ"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-sm btn-outline-danger" onclick="route_deleteData('${routeId}')" title="ลบ"><i class="fas fa-trash"></i></button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -83,25 +91,29 @@ function route_openModal(routeObj = null) {
   document.getElementById('route_active').checked = true;
 
   if (routeObj) {
+    const routeId = routeObj.route_id || routeObj.Route_ID;
+    const siteId = routeObj.site_id || routeObj.Site_ID;
+    const siteName = routeObj.site_name || routeObj.Site_Name;
+
     document.getElementById('modalMasterRouteLabel').innerText = 'แก้ไขเส้นทาง';
-    document.getElementById('route_id').value = routeObj.Route_ID;
+    document.getElementById('route_id').value = routeId;
 
     // If updating, temporarily add the inactive site to dropdown if it's selected
     const select = document.getElementById('route_site_id');
     let optionExists = false;
     for (let i = 0; i < select.options.length; i++) {
-      if (select.options[i].value === routeObj.Site_ID) optionExists = true;
+      if (select.options[i].value === siteId) optionExists = true;
     }
     if (!optionExists) {
-      select.innerHTML += `<option value="${routeObj.Site_ID}">${routeObj.Site_Name} (Inactive)</option>`;
+      select.innerHTML += `<option value="${siteId}">${siteName} (Inactive)</option>`;
     }
 
-    document.getElementById('route_site_id').value = routeObj.Site_ID;
-    document.getElementById('route_name').value = routeObj.Route_Name;
-    document.getElementById('route_origin').value = routeObj.Origin;
-    document.getElementById('route_destination').value = routeObj.Destination;
-    document.getElementById('route_distance').value = routeObj.Distance_KM;
-    document.getElementById('route_active').checked = routeObj.Active;
+    document.getElementById('route_site_id').value = siteId;
+    document.getElementById('route_name').value = routeObj.route_name || routeObj.Route_Name;
+    document.getElementById('route_origin').value = routeObj.origin || routeObj.Origin;
+    document.getElementById('route_destination').value = routeObj.destination || routeObj.Destination;
+    document.getElementById('route_distance').value = routeObj.distance_km !== undefined ? routeObj.distance_km : routeObj.Distance_KM;
+    document.getElementById('route_active').checked = routeObj.active !== undefined ? routeObj.active : routeObj.Active;
   } else {
     document.getElementById('modalMasterRouteLabel').innerText = 'เพิ่มเส้นทางใหม่';
   }
@@ -110,14 +122,30 @@ function route_openModal(routeObj = null) {
 }
 
 async function route_saveData() {
+  const routeId = document.getElementById('route_id').value;
+  const siteId = document.getElementById('route_site_id').value;
+  const routeName = document.getElementById('route_name').value.trim();
+  const origin = document.getElementById('route_origin').value.trim();
+  const destination = document.getElementById('route_destination').value.trim();
+  const distanceKm = document.getElementById('route_distance').value;
+  const active = document.getElementById('route_active').checked;
+
   const payload = {
-    Route_ID: document.getElementById('route_id').value,
-    Site_ID: document.getElementById('route_site_id').value,
-    Route_Name: document.getElementById('route_name').value.trim(),
-    Origin: document.getElementById('route_origin').value.trim(),
-    Destination: document.getElementById('route_destination').value.trim(),
-    Distance_KM: document.getElementById('route_distance').value,
-    Active: document.getElementById('route_active').checked,
+    route_id: routeId,
+    site_id: siteId,
+    route_name: routeName,
+    origin: origin,
+    destination: destination,
+    distance_km: distanceKm,
+    active: active,
+    // Backward compatibility
+    Route_ID: routeId,
+    Site_ID: siteId,
+    Route_Name: routeName,
+    Origin: origin,
+    Destination: destination,
+    Distance_KM: distanceKm,
+    Active: active,
   };
 
   // Validation

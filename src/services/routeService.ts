@@ -12,6 +12,15 @@ export async function getAllRoutes(db: D1Database) {
     .all<RouteRow>();
 
   return results.map(row => ({
+    route_id: row.route_id,
+    site_id: row.site_id,
+    site_name: row.site_name,
+    route_name: row.route_name,
+    origin: row.origin,
+    destination: row.destination,
+    distance_km: row.distance_km,
+    active: row.active === 1,
+    // Backward compatibility aliases
     Route_ID: row.route_id,
     Site_ID: row.site_id,
     Site_Name: row.site_name,
@@ -26,21 +35,28 @@ export async function getAllRoutes(db: D1Database) {
 export async function saveRoute(
   db: D1Database,
   payload: {
+    route_id?: string;
+    site_id?: string;
+    route_name?: string;
+    origin?: string;
+    destination?: string;
+    distance_km?: number | string;
+    active?: boolean;
     Route_ID?: string;
-    Site_ID: string;
-    Route_Name: string;
-    Origin: string;
-    Destination: string;
-    Distance_KM: number | string;
-    Active: boolean;
+    Site_ID?: string;
+    Route_Name?: string;
+    Origin?: string;
+    Destination?: string;
+    Distance_KM?: number | string;
+    Active?: boolean;
   }
 ) {
-  const siteId = payload.Site_ID?.trim() ?? '';
-  const routeName = payload.Route_Name?.trim() ?? '';
-  const origin = payload.Origin?.trim() ?? '';
-  const destination = payload.Destination?.trim() ?? '';
-  const routeId = payload.Route_ID?.trim() ?? '';
-  const active = payload.Active ? 1 : 0;
+  const siteId = (payload.site_id || payload.Site_ID)?.trim() ?? '';
+  const routeName = (payload.route_name || payload.Route_Name)?.trim() ?? '';
+  const origin = (payload.origin || payload.Origin)?.trim() ?? '';
+  const destination = (payload.destination || payload.Destination)?.trim() ?? '';
+  const routeId = (payload.route_id || payload.Route_ID)?.trim() ?? '';
+  const active = (payload.active !== undefined ? payload.active : payload.Active) ? 1 : 0;
 
   if (!siteId) throw new Error('กรุณาเลือก Site');
   if (!routeName) throw new Error('กรุณาระบุชื่อเส้นทาง');

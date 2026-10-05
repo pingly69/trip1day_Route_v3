@@ -4,19 +4,18 @@ export async function getTransactions(db: D1Database, filters: TransactionFilter
   const conditions: string[] = [];
   const bindings: (string | number)[] = [];
 
-  // 1. Created_At Range (Stored as ISO: YYYY-MM-DDTHH:MM:SS.sss+07:00)
+  // 1. Created_At Range (Stored as YYYY-MM-DD HH:MM:SS with space)
   if (filters.startCreatedAt) {
-    let s = filters.startCreatedAt.trim().replace(' ', 'T');
-    if (s.length === 10) s += 'T00:00:00';
+    let s = filters.startCreatedAt.trim().replace('T', ' ');
+    if (s.length === 10) s += ' 00:00:00';
     else if (s.length === 16) s += ':00';
     conditions.push('t.created_at >= ?');
     bindings.push(s);
   }
   if (filters.endCreatedAt) {
-    let s = filters.endCreatedAt.trim().replace(' ', 'T');
-    if (s.length === 10) s += 'T23:59:59.999+07:00';
-    else if (s.length === 16) s += ':59.999+07:00';
-    else if (s.length === 19) s += '.999+07:00';
+    let s = filters.endCreatedAt.trim().replace('T', ' ');
+    if (s.length === 10) s += ' 23:59:59';
+    else if (s.length === 16) s += ':59';
     conditions.push('t.created_at <= ?');
     bindings.push(s);
   }
@@ -108,8 +107,29 @@ export async function getTransactions(db: D1Database, filters: TransactionFilter
   const bound = bindings.length > 0 ? stmt.bind(...bindings) : stmt;
   const { results } = await bound.all<TransactionRow>();
 
-  // Map to the object schema expected by OLD_UI table & excel export
+  // Map to native D1 snake_case schema with backward compatibility aliases
   return results.map(r => ({
+    transaction_id: r.transaction_id,
+    req_date: r.req_date,
+    emp_no: r.emp_no || '',
+    req_line_user_id: r.req_line_user_id,
+    req_name: r.req_name,
+    plate_no: r.plate_no,
+    site_id: r.site_id,
+    site_name: r.site_name,
+    travel_purpose: r.travel_purpose,
+    image_url: r.image_url,
+    trip_details: r.trip_details,
+    total_km: r.total_km,
+    toll_fee: r.toll_fee,
+    park_fee: r.park_fee,
+    flat_rate_fee: r.flat_rate_fee,
+    net_total: r.net_total,
+    approver: r.approver,
+    status: r.status,
+    approve_datetime: r.approve_datetime,
+    created_at: r.created_at,
+    // Backward compatibility aliases
     Transaction_ID: r.transaction_id,
     Req_Date: r.req_date,
     Emp_No: r.emp_no || '',

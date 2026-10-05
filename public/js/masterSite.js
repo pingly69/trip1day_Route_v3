@@ -29,19 +29,23 @@ function site_renderTable(sites) {
   }
 
   sites.forEach((s, idx) => {
-    const badge = s.Active
+    const siteId = s.site_id || s.Site_ID;
+    const siteName = s.site_name || s.Site_Name;
+    const isActive = s.active !== undefined ? s.active : s.Active;
+
+    const badge = isActive
       ? '<span class="badge bg-success">Active</span>'
       : '<span class="badge bg-secondary">Inactive</span>';
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${idx + 1}</td>
-      <td><span class="badge bg-light text-dark font-monospace border px-2 py-1">${s.Site_ID}</span></td>
-      <td class="fw-bold">${s.Site_Name}</td>
+      <td><span class="badge bg-light text-dark font-monospace border px-2 py-1">${siteId}</span></td>
+      <td class="fw-bold">${siteName}</td>
       <td>${badge}</td>
       <td class="text-end">
         <button class="btn btn-sm btn-outline-primary me-1" onclick='site_openModal(${JSON.stringify(s)})' title="แก้ไข"><i class="fas fa-edit"></i></button>
-        <button class="btn btn-sm btn-outline-danger" onclick="site_deleteData('${s.Site_ID}')" title="ลบ"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-sm btn-outline-danger" onclick="site_deleteData('${siteId}')" title="ลบ"><i class="fas fa-trash"></i></button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -57,12 +61,12 @@ function site_openModal(siteObj = null) {
   if (siteObj) {
     document.getElementById('modalMasterSiteLabel').innerText = 'แก้ไข Master Site';
     isEditInput.value = 'true';
-    siteIdInput.value = siteObj.Site_ID;
+    siteIdInput.value = siteObj.site_id || siteObj.Site_ID;
     siteIdInput.readOnly = true;
     siteIdInput.classList.add('bg-light');
     helpText.innerHTML = '<i class="fas fa-lock text-warning me-1"></i>รหัส Site (Site ID) ไม่สามารถแก้ไขได้ หากต้องการเปลี่ยนรหัสต้องลบแล้วสร้างใหม่';
-    document.getElementById('site_name').value = siteObj.Site_Name;
-    document.getElementById('site_active').checked = siteObj.Active;
+    document.getElementById('site_name').value = siteObj.site_name || siteObj.Site_Name;
+    document.getElementById('site_active').checked = siteObj.active !== undefined ? siteObj.active : siteObj.Active;
   } else {
     document.getElementById('modalMasterSiteLabel').innerText = 'เพิ่ม Master Site ใหม่';
     isEditInput.value = 'false';
@@ -95,6 +99,10 @@ async function site_saveData() {
 
   const payload = {
     isEdit: isEdit,
+    site_id: siteId,
+    site_name: siteName,
+    active: active,
+    // Backward compatibility
     Site_ID: siteId,
     Site_Name: siteName,
     Active: active,

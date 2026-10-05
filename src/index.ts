@@ -128,7 +128,7 @@ export default {
         if (method === 'POST') {
           const payload = await request.json<any>();
           const siteId = await saveSite(db, payload);
-          return jsonResponse({ status: 'success', data: { Site_ID: siteId } });
+          return jsonResponse({ status: 'success', data: { site_id: siteId, Site_ID: siteId } });
         }
       }
 
@@ -137,9 +137,10 @@ export default {
         if (method === 'PUT') {
           const payload = await request.json<any>();
           payload.isEdit = true;
+          payload.site_id = siteId;
           payload.Site_ID = siteId;
           await saveSite(db, payload);
-          return jsonResponse({ status: 'success', data: { Site_ID: siteId } });
+          return jsonResponse({ status: 'success', data: { site_id: siteId, Site_ID: siteId } });
         }
         if (method === 'DELETE') {
           await deleteSite(db, siteId);
@@ -156,7 +157,7 @@ export default {
         if (method === 'POST') {
           const payload = await request.json<any>();
           const routeId = await saveRoute(db, payload);
-          return jsonResponse({ status: 'success', data: { Route_ID: routeId } });
+          return jsonResponse({ status: 'success', data: { route_id: routeId, Route_ID: routeId } });
         }
       }
 
@@ -164,9 +165,10 @@ export default {
         const routeId = decodeURIComponent(path.slice('/api/routes/'.length));
         if (method === 'PUT') {
           const payload = await request.json<any>();
+          payload.route_id = routeId;
           payload.Route_ID = routeId;
           await saveRoute(db, payload);
-          return jsonResponse({ status: 'success', data: { Route_ID: routeId } });
+          return jsonResponse({ status: 'success', data: { route_id: routeId, Route_ID: routeId } });
         }
         if (method === 'DELETE') {
           await deleteRoute(db, routeId);
@@ -184,7 +186,7 @@ export default {
           const payload = await request.json<any>();
           payload.isEdit = false;
           const lineUid = await saveUser(db, payload);
-          return jsonResponse({ status: 'success', data: { Line_uid: lineUid } });
+          return jsonResponse({ status: 'success', data: { line_uid: lineUid, Line_uid: lineUid } });
         }
       }
 
@@ -193,9 +195,10 @@ export default {
         if (method === 'PUT') {
           const payload = await request.json<any>();
           payload.isEdit = true;
+          payload.line_uid = lineUid;
           payload.Line_uid = lineUid;
           await saveUser(db, payload);
-          return jsonResponse({ status: 'success', data: { Line_uid: lineUid } });
+          return jsonResponse({ status: 'success', data: { line_uid: lineUid, Line_uid: lineUid } });
         }
         if (method === 'DELETE') {
           await deleteUser(db, lineUid);

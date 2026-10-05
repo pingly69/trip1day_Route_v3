@@ -89,25 +89,37 @@ function dash_renderTable(data) {
   };
 
   data.forEach(t => {
+    const status = t.status || t.Status || '-';
     let badgeClass = 'bg-secondary';
-    if (t.Status === 'APPROVED') badgeClass = 'bg-success';
-    else if (t.Status === 'REJECTED') badgeClass = 'bg-danger';
-    else if (t.Status === 'PENDING') badgeClass = 'bg-warning text-dark';
-    else if (t.Status === 'DRAFT') badgeClass = 'bg-light text-dark border';
+    if (status === 'APPROVED') badgeClass = 'bg-success';
+    else if (status === 'REJECTED') badgeClass = 'bg-danger';
+    else if (status === 'PENDING') badgeClass = 'bg-warning text-dark';
+    else if (status === 'DRAFT') badgeClass = 'bg-light text-dark border';
+
+    const txId = t.transaction_id || t.Transaction_ID || '-';
+    const createdAt = t.created_at || t.Created_At;
+    const reqDate = t.req_date || t.Req_Date;
+    const empNo = t.emp_no || t.Emp_No || '';
+    const reqName = t.req_name || t.Req_Name || '-';
+    const plateNo = t.plate_no || t.Plate_No || '-';
+    const siteName = t.site_name || t.Site_Name || '-';
+    const totalKm = t.total_km !== undefined ? t.total_km : (t.Total_KM || 0);
+    const netTotal = parseFloat(t.net_total !== undefined ? t.net_total : (t.Net_Total || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const approver = t.approver || t.Approver || '-';
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="font-monospace">${t.Transaction_ID || '-'}</td>
-      <td>${formatDt(t.Created_At)}</td>
-      <td>${formatReqDate(t.Req_Date)}</td>
-      <td>${t.Emp_No ? `<span class="badge bg-light text-dark font-monospace border">${t.Emp_No}</span>` : '-'}</td>
-      <td class="fw-bold">${t.Req_Name || '-'}</td>
-      <td>${t.Plate_No || '-'}</td>
-      <td>${t.Site_Name || '-'}</td>
-      <td class="text-end">${t.Total_KM || 0}</td>
-      <td class="text-end fw-bold text-success">${parseFloat(t.Net_Total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-      <td class="text-center"><span class="badge ${badgeClass}">${t.Status || '-'}</span></td>
-      <td>${t.Approver || '-'}</td>
+      <td class="font-monospace">${txId}</td>
+      <td>${formatDt(createdAt)}</td>
+      <td>${formatReqDate(reqDate)}</td>
+      <td>${empNo ? `<span class="badge bg-light text-dark font-monospace border">${empNo}</span>` : '-'}</td>
+      <td class="fw-bold">${reqName}</td>
+      <td>${plateNo}</td>
+      <td>${siteName}</td>
+      <td class="text-end">${totalKm}</td>
+      <td class="text-end fw-bold text-success">${netTotal}</td>
+      <td class="text-center"><span class="badge ${badgeClass}">${status}</span></td>
+      <td>${approver}</td>
     `;
     tbody.appendChild(tr);
   });
